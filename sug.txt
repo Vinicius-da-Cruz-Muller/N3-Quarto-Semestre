@@ -1,0 +1,41 @@
+from flask import Flask, request
+import mysql.connector
+
+app = Flask(_name_)
+
+# Configurações do banco de dados
+db_config = {
+    'user': 'seu_usuario',
+    'password': 'sua_senha',
+    'host': 'localhost',
+    'database': 'nome_do_banco_de_dados',
+    'raise_on_warnings': True
+}
+
+# Rota para criar uma nova música
+@app.route('/musica', methods=['POST'])
+def criar_musica():
+    # Recebe os dados enviados pelo cliente
+    dados_musica = request.get_json()
+    
+    # Conecta-se ao banco de dados
+    cnx = mysql.connector.connect(**db_config)
+    cursor = cnx.cursor()
+    
+    # Insere a música na tabela de músicas
+    query = "INSERT INTO Songs (titulo, artista, album) VALUES (%s, %s, %s)"
+    valores = (dados_musica['titulo'], dados_musica['artista'], dados_musica['album'])
+    cursor.execute(query, valores)
+    
+    # Realiza o commit da transação
+    cnx.commit()
+    
+    # Fecha a conexão com o banco de dados
+    cursor.close()
+    cnx.close()
+    
+    # Retorna uma resposta para o cliente
+    return 'Música criada com sucesso!', 201
+
+if _name_ == '_main_':
+    app.run()
