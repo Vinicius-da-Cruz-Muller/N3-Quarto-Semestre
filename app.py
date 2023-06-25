@@ -166,6 +166,162 @@ def exclui_genero():
         )
     )
 
+#------------------------------------------------------------------------------------------------------
+
+@app.route('/artistas', methods = ['GET']) #puxa todos os artistas do banco
+def get_artistas():
+
+    my_cursor = mydb.cursor()
+    my_cursor.execute('SELECT * FROM artistas')
+    artistas = my_cursor.fetchall()
+
+    artists = list()
+    for artist in artistas:
+        artists.append(
+            {
+                'id' : artist[0],
+                'nome' : artist[1],
+                'gravadora_id' : artist[2]
+            }
+        )
+
+    return make_response(
+        jsonify(
+        mensagem = 'Lista de artistas',
+        dados = artists
+        )
+    )
+
+
+@app.route('/artistas', methods = ['POST']) #adiciona um novo artista
+def novo_artista():
+    artist = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"INSERT INTO `artistas` (`nome`, `gravadoras_id`) VALUES ('{artist['nome']}', '{artist['gravadoras_id']}')"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Artista inserido com sucesso!',
+        dados = artist
+        )
+    )
+
+@app.route('/artistas', methods = ['PUT'])  # Altera o nome do artista
+def altera_artista():
+    artist = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"UPDATE `artistas` SET `nome` = '{artist['nome']}' WHERE `id` = '{artist['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Artista alterado com sucesso!',
+        dados = artist
+        )
+    )
+
+
+@app.route('/artistas', methods = ['DELETE']) # deleta um artista
+def exclui_artista():
+    artist = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"DELETE from `artistas` WHERE `id` = '{artist['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Artista excluido com sucesso!',
+        dados = artist
+        )
+    )
+
+#-------------------------------------------------------------------------------------------------------------------------
+
+@app.route('/gravadoras', methods = ['GET']) #puxa todas as gravadoras
+def get_gravadoras():
+
+    my_cursor = mydb.cursor()
+    my_cursor.execute('SELECT * FROM gravadoras')
+    gravadoras = my_cursor.fetchall()
+
+    records = list()
+    for rec in gravadoras:
+        records.append(
+            {
+                'id' : rec[0],
+                'nome' : rec[1],
+                'valor_contrato' : str(rec[2]),
+            }
+        )
+
+    return make_response(
+        jsonify(
+        mensagem = 'Lista de gravadoras',
+        dados = records
+        )
+    )
+
+@app.route('/gravadoras', methods = ['POST']) #adiciona uma nova gravadora
+def nova_gravadora():
+    record = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"INSERT INTO `gravadoras` (`nome`, `valor_contrato`) VALUES ('{record['nome']}', '{record['valor_contrato']}')"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Gravadora inserida com sucesso!',
+        dados = record
+        )
+    )
+
+
+@app.route('/gravadoras', methods = ['PUT'])  # Altera o nome da gravadora
+def altera_gravadora():
+    record = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"UPDATE `gravadoras` SET `nome` = '{record['nome']}' WHERE `id` = '{record['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Gravadora alterada com sucesso!',
+        dados = record
+        )
+    )
+
+@app.route('/gravadoras', methods = ['DELETE']) # deleta uma gravadora
+def exclui_gravadora():
+    record = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"DELETE from `gravadoras` WHERE `id` = '{record['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Gravadora excluida com sucesso!',
+        dados = record
+        )
+    )
 
 
 
