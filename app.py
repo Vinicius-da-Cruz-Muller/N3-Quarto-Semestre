@@ -34,6 +34,24 @@ def get_musicas():
         dados = songs
         )
     )
+
+@app.route('/musicas', methods = ['POST'])
+def nova_musica():
+    song = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"INSERT INTO `musicas` (`id`, `nome`, `duracao`, `generos_id`, `lancamento`, `created`, `modified`) VALUES ('{song['id']}', '{song['nome']}', '{song['duracao']}', '{song['generos_id']}', '{song['lancamento']}', '{song['created']}', '{song['modified']}')"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Música cadastrada com sucesso!',
+        dados = song
+        )
+    )
+
 if __name__ == '__main__':
     
     app.run(host="localhost", port="5000", debug=True)
