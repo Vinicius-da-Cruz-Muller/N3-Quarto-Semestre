@@ -11,7 +11,7 @@ mydb = mysql.connector.connect(
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
-@app.route('/musicas', methods = ['GET'])
+@app.route('/musicas', methods = ['GET']) #puxa todas as músicas da tabela músicas, tanto as que já estavam no banco quanto as criadas na api
 def get_musicas():
 
     my_cursor = mydb.cursor()
@@ -25,7 +25,7 @@ def get_musicas():
                 'id' : song[0],
                 'nome' : song[1],
                 'duracao' : str(song[2]),
-                'lancamento': str(song[4]) #retorna None como padrão
+                'lancamento': str(song[4]) 
             }
         )
 
@@ -36,7 +36,7 @@ def get_musicas():
         )
     )
 
-@app.route('/musicas', methods = ['POST'])
+@app.route('/musicas', methods = ['POST']) #adicona uma nova música. id é auto incrementado e as datas são colocadas por padrão como "None"
 def nova_musica():
     song = request.json
 
@@ -53,7 +53,7 @@ def nova_musica():
         )
     )
 
-@app.route('/musicas', methods = ['PUT'])
+@app.route('/musicas', methods = ['PUT']) # Altera o nome da música. Se tiver que alterar outra coisa, basta alterar o comando ou comandos sql
 def altera_musica():
     song = request.json
 
@@ -70,7 +70,7 @@ def altera_musica():
         )
     )
 
-@app.route('/musicas', methods = ['DELETE'])
+@app.route('/musicas', methods = ['DELETE']) # deleta uma música baseado no id que é passado. existe outra parametro que se pode pedir para excluir?
 def exclui_musica():
     song = request.json
 
@@ -84,6 +84,33 @@ def exclui_musica():
         jsonify(
         mensagem = 'Música excluida com sucesso!',
         dados = song
+        )
+    )
+
+# ----------------------------------------------------------------------------------------------------------
+
+@app.route('/generos', methods = ['GET']) 
+def get_generos():
+
+    my_cursor = mydb.cursor()
+    my_cursor.execute('SELECT * FROM generos')
+    generos = my_cursor.fetchall()
+
+    gens = list()
+    for gen in generos:
+        gens.append(
+            {
+                'id' : gen[0],
+                'descricao' : gen[1],
+                'created' : str(gen[2]),
+                'modified': str(gen[3]) 
+            }
+        )
+
+    return make_response(
+        jsonify(
+        mensagem = 'Lista de gêneros do banco de dados',
+        dados = gens
         )
     )
 
