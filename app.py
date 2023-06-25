@@ -70,6 +70,23 @@ def altera_musica():
         )
     )
 
+@app.route('/musicas', methods = ['DELETE'])
+def exclui_musica():
+    song = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"DELETE from `musicas` WHERE `id` = '{song['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Música excluida com sucesso!',
+        dados = song
+        )
+    )
+
 if __name__ == '__main__':
     
     app.run(host="localhost", port="5000", debug=True)
