@@ -24,7 +24,8 @@ def get_musicas():
             {
                 'id' : song[0],
                 'nome' : song[1],
-                'duracao' : str(song[2])
+                'duracao' : str(song[2]),
+                'lancamento': str(song[4])
             }
         )
 
@@ -41,7 +42,7 @@ def nova_musica():
 
     my_cursor = mydb.cursor()
 
-    sql = f"INSERT INTO `musicas` (`id`, `nome`, `duracao`, `generos_id`, `lancamento`, `created`, `modified`) VALUES ('{song['id']}', '{song['nome']}', '{song['duracao']}', '{song['generos_id']}', '{song['lancamento']}', '{song['created']}', '{song['modified']}')"
+    sql = f"INSERT INTO `musicas` (`nome`, `duracao`, `generos_id`) VALUES ('{song['nome']}', '{song['duracao']}', '{song['generos_id']}')"
     my_cursor.execute(sql)
     mydb.commit()
 
