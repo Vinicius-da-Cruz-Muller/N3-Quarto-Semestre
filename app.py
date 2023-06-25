@@ -405,6 +405,85 @@ def exclui_cliente():
         )
     )
 
+#------------------------------------------------------------------------------------------------
+
+@app.route('/planos', methods = ['GET']) #mostra todos os planos
+def get_planos():
+
+    my_cursor = mydb.cursor()
+    my_cursor.execute('SELECT * FROM planos')
+    planos = my_cursor.fetchall()
+
+    plans = list()
+    for plan in planos:
+        plans.append(
+            {
+                'id' : plan[0],
+                'descricao' : plan[1],
+                'valor' : plan[2],
+                'limite': plan[3]
+            }
+        )
+
+    return make_response(
+        jsonify(
+        mensagem = 'Lista de planos',
+        dados = plans
+        )
+    )
+
+@app.route('/planos', methods = ['POST']) #adiciona um novo plano
+def novo_plano():
+    plan = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"INSERT INTO `planos` (`descricao`, `valor`,`limite`) VALUES ('{plan['descricao']}', '{plan['valor']}', '{plan['limite']}')"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Plano inserido com sucesso!',
+        dados = plan
+        )
+    )
+
+
+@app.route('/planos', methods = ['PUT'])  # Altera o nome do plano
+def altera_plano():
+    plan = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"UPDATE `planos` SET `descricao` = '{plan['descricao']}' WHERE `id` = '{plan['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Plano alterado com sucesso!',
+        dados = plan
+        )
+    )
+
+@app.route('/planos', methods = ['DELETE']) # deleta um plano
+def exclui_plano():
+    plan = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"DELETE from `planos` WHERE `id` = '{plan['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Plano excluído com sucesso!',
+        dados = plan
+        )
+    )
+
 if __name__ == '__main__':
     
     app.run(host="localhost", port="5000", debug=True)
