@@ -25,7 +25,7 @@ def get_musicas():
                 'id' : song[0],
                 'nome' : song[1],
                 'duracao' : str(song[2]),
-                'lancamento': str(song[4])
+                'lancamento': str(song[4]) #retorna None como padrão
             }
         )
 
@@ -49,6 +49,23 @@ def nova_musica():
     return make_response(
         jsonify(
         mensagem = 'Música cadastrada com sucesso!',
+        dados = song
+        )
+    )
+
+@app.route('/musicas', methods = ['PUT'])
+def altera_musica():
+    song = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"UPDATE `musicas` SET `nome` = '{song['nome']}' WHERE `id` = '{song['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Música alterada com sucesso!',
         dados = song
         )
     )
