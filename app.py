@@ -132,6 +132,42 @@ def inserir_genero_musical():
         )
     )
 
+@app.route('/generos', methods = ['PUT']) # Altera a descrição do gênero musical
+def altera_genero():
+    gen = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"UPDATE `generos` SET `descricao` = '{gen['descricao']}' WHERE `id` = '{gen['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Gênero musical alterado com sucesso!',
+        dados = gen
+        )
+    )
+
+@app.route('/generos', methods = ['DELETE']) # deleta um genero musical.
+def exclui_genero():
+    gen = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"DELETE from `generos` WHERE `id` = '{gen['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Genero excluido com sucesso!',
+        dados = gen
+        )
+    )
+
+
+
 
 if __name__ == '__main__':
     
