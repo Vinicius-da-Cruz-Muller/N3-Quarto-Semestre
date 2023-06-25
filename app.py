@@ -36,7 +36,7 @@ def get_musicas():
         )
     )
 
-@app.route('/musicas', methods = ['POST']) #adicona uma nova música. id é auto incrementado e as datas são colocadas por padrão como "None"
+@app.route('/musicas', methods = ['POST']) #adiciona uma nova música. id é auto incrementado e as datas são colocadas por padrão como "None"
 def nova_musica():
     song = request.json
 
@@ -89,7 +89,7 @@ def exclui_musica():
 
 # ----------------------------------------------------------------------------------------------------------
 
-@app.route('/generos', methods = ['GET']) 
+@app.route('/generos', methods = ['GET']) #lista todos os generos musicais
 def get_generos():
 
     my_cursor = mydb.cursor()
@@ -113,6 +113,25 @@ def get_generos():
         dados = gens
         )
     )
+
+
+@app.route('/generos', methods = ['POST']) #Insere um novo gênero musical na tabela generos
+def inserir_genero_musical():
+    gen = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"INSERT INTO `generos` (`descricao`) VALUES ('{gen['descricao']}')"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Gênero musical inserido com sucesso!',
+        dados = gen
+        )
+    )
+
 
 if __name__ == '__main__':
     
