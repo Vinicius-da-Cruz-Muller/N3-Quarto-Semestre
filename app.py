@@ -323,7 +323,87 @@ def exclui_gravadora():
         )
     )
 
+#----------------------------------------------------------------------------------------------------------------
 
+@app.route('/clientes', methods = ['GET']) #mostra todos os clientes
+def get_clientes():
+
+    my_cursor = mydb.cursor()
+    my_cursor.execute('SELECT * FROM clientes')
+    clientes = my_cursor.fetchall()
+
+    clients = list()
+    for cli in clientes:
+        clients.append(
+            {
+                'id' : cli[0],
+                'login' : cli[1],
+                'senha' : cli[2],
+                'planos_id': cli[5],
+                'email': cli[6]
+            }
+        )
+
+    return make_response(
+        jsonify(
+        mensagem = 'Lista de clientes',
+        dados = clients
+        )
+    )
+
+
+@app.route('/clientes', methods = ['POST']) #adiciona um novo cliente
+def novo_cliente():
+    client = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"INSERT INTO `clientes` (`login`, `senha`,`planos_id`,`email`) VALUES ('{client['login']}', '{client['senha']}', '{client['planos_id']}', '{client['email']}')"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Cliente inserido com sucesso!',
+        dados = client
+        )
+    )
+
+
+@app.route('/clientes', methods = ['PUT'])  # Altera o nome do cliente
+def altera_cliente():
+    client = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"UPDATE `clientes` SET `login` = '{client['login']}' WHERE `id` = '{client['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Cliente alterado com sucesso!',
+        dados = client
+        )
+    )
+
+
+@app.route('/clientes', methods = ['DELETE']) # deleta um cliente
+def exclui_cliente():
+    client = request.json
+
+    my_cursor = mydb.cursor()
+
+    sql = f"DELETE from `clientes` WHERE `id` = '{client['id']}'"
+    my_cursor.execute(sql)
+    mydb.commit()
+
+    return make_response(
+        jsonify(
+        mensagem = 'Cliente excluído com sucesso!',
+        dados = client
+        )
+    )
 
 if __name__ == '__main__':
     
