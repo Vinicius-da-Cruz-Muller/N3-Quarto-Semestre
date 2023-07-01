@@ -36,22 +36,58 @@ def get_musicas():
         )
     )
 
+#Concluída
+
 @app.route('/musicas', methods = ['POST']) #adiciona uma nova música. id é auto incrementado e as datas são colocadas por padrão como "None"
-def nova_musica():
-    song = request.json
+def nova_musica(request):
+    nome = request.json['nome']
+    duracao = request.json['duracao']
+    generos_id = request.json['generos_id']
+    lancamento = request.json['lancamento']
+    artistas = request.json['artistas']
+    musicas_id, error = musicas_insert(nome, duracao, generos_id, lancamento)
+    if error:
+        return jsonify({"error": error}), 500
+    error = musicas_artistas_insert(musicas_id, artistas)
+    if error:
+        return jsonify({"error": error}), 500
+    return '', 201
 
-    my_cursor = mydb.cursor()
+def musicas_insert(nome, duracao, generos_id, lancamento):
+    try:
+        my_cursor = mydb.cursor()
+        my_cursor.execute("INSERT INTO `musicas` (`nome`, `duracao`, `generos_id`, `lancamento`) VALUES (%s, %s, %s, %s)", (nome, duracao, generos_id, lancamento))
+        mydb.commit()
+        return my_cursor.lastrowid, None
+    except Exception as e:
+        return 0, str(e)
+    
+def musicas_artistas_insert(musicas_id, artistas):
+    try:
+        my_cursor = mydb.cursor()
+        for artistas_id in artistas:
+            my_cursor.execute("INSERT INTO `musicas_has_artistas` (`musicas_id`, `artistas_id`) VALUES (%s, %s)", (musicas_id, artistas_id))
+        mydb.commit()
+        return None
+    except Exception as e:
+        return 0, str(e)
+    
 
-    sql = f"INSERT INTO `musicas` (`nome`, `duracao`, `generos_id`) VALUES ('{song['nome']}', '{song['duracao']}', '{song['generos_id']}')"
-    my_cursor.execute(sql)
-    mydb.commit()
+# def nova_musica():
+#     song = request.json
 
-    return make_response(
-        jsonify(
-        mensagem = 'Música cadastrada com sucesso!',
-        dados = song
-        )
-    )
+#     my_cursor = mydb.cursor()
+
+#     sql = f"INSERT INTO `musicas` (`nome`, `duracao`, `generos_id`) VALUES ('{song['nome']}', '{song['duracao']}', '{song['generos_id']}')"
+#     my_cursor.execute(sql)
+#     mydb.commit()
+
+#     return make_response(
+#         jsonify(
+#         mensagem = 'Música cadastrada com sucesso!',
+#         dados = song
+#         )
+#     )
 
 @app.route('/musicas', methods = ['PUT']) # Altera o nome da música. Se tiver que alterar outra coisa, basta alterar o comando ou comandos sql
 def altera_musica():
