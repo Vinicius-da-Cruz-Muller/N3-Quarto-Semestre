@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
 @app.route('/musicas', methods = ['GET']) #puxa todas as músicas da tabela músicas, tanto as que já estavam no banco quanto as criadas na api
-def get_musicas():
+def get_musicas(): #Concluído
 
     my_cursor = mydb.cursor()
     my_cursor.execute('SELECT * FROM musicas')
@@ -36,8 +36,25 @@ def get_musicas():
         )
     )
 
-#Concluída
+@app.route('/musicas/<int:musica_id>', methods = ['GET'])
+def musica_por_id(musica_id): #Concluído
+    try: 
+        my_cursor = mydb.cursor()
+        sql = "SELECT nome, duracao FROM musicas WHERE id = %s"
+        my_cursor.execute(sql, (musica_id,))
+        resultado = my_cursor.fetchone()
 
+        if resultado:
+            nome, duracao = resultado
+            musica = {'Nome da música': nome, 'Tempo de duração': str(duracao)}
+            return jsonify(musica)
+        else:
+            return jsonify({'mensagem': 'Música não encontrada'}), 404
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
+
+
+#Concluída
 @app.route('/musicas', methods = ['POST']) #adiciona uma nova música. id é auto incrementado e as datas são colocadas por padrão como "None"
 def nova_musica(request):
     nome = request.json['nome']
@@ -73,24 +90,8 @@ def musicas_artistas_insert(musicas_id, artistas):
         return 0, str(e)
     
 
-# def nova_musica():
-#     song = request.json
-
-#     my_cursor = mydb.cursor()
-
-#     sql = f"INSERT INTO `musicas` (`nome`, `duracao`, `generos_id`) VALUES ('{song['nome']}', '{song['duracao']}', '{song['generos_id']}')"
-#     my_cursor.execute(sql)
-#     mydb.commit()
-
-#     return make_response(
-#         jsonify(
-#         mensagem = 'Música cadastrada com sucesso!',
-#         dados = song
-#         )
-#     )
-
 @app.route('/musicas', methods = ['PUT']) # Altera o nome da música. Se tiver que alterar outra coisa, basta alterar o comando ou comandos sql
-def altera_musica():
+def altera_musica(): #Concluído?
     song = request.json
 
     my_cursor = mydb.cursor()
@@ -126,7 +127,7 @@ def exclui_musica():
 # ----------------------------------------------------------------------------------------------------------
 
 @app.route('/generos', methods = ['GET']) #lista todos os generos musicais
-def get_generos():
+def get_generos(): #Concluído
 
     my_cursor = mydb.cursor()
     my_cursor.execute('SELECT * FROM generos')
@@ -150,9 +151,26 @@ def get_generos():
         )
     )
 
+@app.route('/generos/<int:genero_id>', methods = ['GET'])
+def genero_por_id(genero_id): #Concluído
+    try: 
+        my_cursor = mydb.cursor()
+        sql = "SELECT descricao FROM generos WHERE id = %s"
+        my_cursor.execute(sql, (genero_id,))
+        resultado = my_cursor.fetchone()
+
+        if resultado:
+            descricao = resultado
+            genero = {'Descrição do gênero': descricao}
+            return jsonify(genero)
+        else:
+            return jsonify({'mensagem': 'Gênero não encontrado'}), 404
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
+
 
 @app.route('/generos', methods = ['POST']) #Insere um novo gênero musical na tabela generos
-def inserir_genero_musical():
+def inserir_genero_musical(): #Concluído
     gen = request.json
 
     my_cursor = mydb.cursor()
@@ -169,7 +187,7 @@ def inserir_genero_musical():
     )
 
 @app.route('/generos', methods = ['PUT']) # Altera a descrição do gênero musical
-def altera_genero():
+def altera_genero(): #Concluído
     gen = request.json
 
     my_cursor = mydb.cursor()
@@ -523,3 +541,19 @@ def exclui_plano():
 if __name__ == '__main__':
     
     app.run(host="localhost", port="5000", debug=True)
+
+    # def nova_musica():
+#     song = request.json
+
+#     my_cursor = mydb.cursor()
+
+#     sql = f"INSERT INTO `musicas` (`nome`, `duracao`, `generos_id`) VALUES ('{song['nome']}', '{song['duracao']}', '{song['generos_id']}')"
+#     my_cursor.execute(sql)
+#     mydb.commit()
+
+#     return make_response(
+#         jsonify(
+#         mensagem = 'Música cadastrada com sucesso!',
+#         dados = song
+#         )
+#     )
