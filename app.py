@@ -54,9 +54,8 @@ def musica_por_id(musica_id): #Concluído
         return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
 
 
-#Concluída
 @app.route('/musicas', methods = ['POST']) #adiciona uma nova música. id é auto incrementado e as datas são colocadas por padrão como "None"
-def nova_musica(request):
+def nova_musica(): #Concluído
     nome = request.json['nome']
     duracao = request.json['duracao']
     generos_id = request.json['generos_id']
@@ -64,11 +63,12 @@ def nova_musica(request):
     artistas = request.json['artistas']
     musicas_id, error = musicas_insert(nome, duracao, generos_id, lancamento)
     if error:
-        return jsonify({"error": error}), 500
+        return jsonify({"mensagem": "Erro ao criar música"}), 500
     error = musicas_artistas_insert(musicas_id, artistas)
     if error:
-        return jsonify({"error": error}), 500
-    return '', 201
+        return jsonify({"mensagem": "Erro ao relacionar artistas"}), 500
+    return jsonify({"mensagem": "Música criada com sucesso"}), 201
+
 
 def musicas_insert(nome, duracao, generos_id, lancamento):
     try:
