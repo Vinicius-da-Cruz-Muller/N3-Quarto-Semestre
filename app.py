@@ -238,9 +238,9 @@ def get_artistas(): #Concluído
     try:
         my_cursor = mydb.cursor()
         sql = """
-        SELECT artistas.id, artistas.nome AS 'Nome do artista', gravadoras.nome AS 'Nome da gravadora'
+        SELECT artistas.id, artistas.nome AS 'Nome do artista', IFNULL(gravadoras.nome, 'Gravadora não existe') AS 'Nome da gravadora'
         FROM artistas
-        JOIN gravadoras ON artistas.gravadoras_id = gravadoras.id
+        LEFT JOIN gravadoras ON artistas.gravadoras_id = gravadoras.id
         """
         my_cursor.execute(sql)
         resultado = my_cursor.fetchall()
@@ -440,19 +440,25 @@ def altera_gravadora(): #Concluído
     )
 
 @app.route('/gravadoras', methods = ['DELETE']) # deleta uma gravadora
-def exclui_gravadora():
+def exclui_gravadora(): #Concluído
     record = request.json
 
     my_cursor = mydb.cursor()
 
-    sql = f"DELETE from `gravadoras` WHERE `id` = '{record['id']}'"
-    my_cursor.execute(sql)
+    # Primeiro, atualize a tabela artistas
+    update_sql = f"UPDATE artistas SET gravadoras_id = NULL WHERE gravadoras_id = '{record['id']}'"
+    my_cursor.execute(update_sql)
+    mydb.commit()
+
+    # Em seguida, delete a gravadora da tabela gravadoras
+    delete_sql = f"DELETE FROM gravadoras WHERE id = '{record['id']}'"
+    my_cursor.execute(delete_sql)
     mydb.commit()
 
     return make_response(
         jsonify(
-        mensagem = 'Gravadora excluida com sucesso!',
-        dados = record
+            mensagem='Gravadora excluída com sucesso!',
+            dados=record
         )
     )
 
