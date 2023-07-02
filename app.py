@@ -13,40 +13,51 @@ app.config['JSON_SORT_KEYS'] = False
 
 @app.route('/musicas', methods = ['GET']) #puxa todas as músicas da tabela músicas, tanto as que já estavam no banco quanto as criadas na api
 def get_musicas(): #Concluído
+    try:
+        my_cursor = mydb.cursor()
+        sql = """
+        SELECT musicas.id, musicas.nome AS 'Nome da música', musicas.duracao AS 'Tempo de duração', artistas.nome AS 'Nome do artista'
+        FROM musicas
+        JOIN musicas_has_artistas ON musicas.id = musicas_has_artistas.musicas_id
+        JOIN artistas ON musicas_has_artistas.artistas_id = artistas.id
+        """
+        my_cursor.execute(sql)
+        resultado = my_cursor.fetchall()
 
-    my_cursor = mydb.cursor()
-    my_cursor.execute('SELECT * FROM musicas')
-    musicas = my_cursor.fetchall()
-
-    songs = list()
-    for song in musicas:
-        songs.append(
-            {
-                'id' : song[0],
-                'nome' : song[1],
-                'duracao' : str(song[2]),
-                'lancamento': str(song[4]) 
+        songs = []
+        for row in resultado:
+            musica = {
+                'id': row[0],
+                'nome': row[1],
+                'duracao': str(row[2]),
+                'nome do artista': row[3]
             }
-        )
+            songs.append(musica)
 
-    return make_response(
-        jsonify(
-        mensagem = 'Lista de músicas',
-        dados = songs
-        )
-    )
+        return make_response(jsonify({
+            'mensagem': 'Lista de músicas',
+            'dados': songs
+        }))
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
 
 @app.route('/musicas/<int:musica_id>', methods = ['GET'])
 def musica_por_id(musica_id): #Concluído
-    try: 
+    try:
         my_cursor = mydb.cursor()
-        sql = "SELECT nome, duracao FROM musicas WHERE id = %s"
+        sql = """
+        SELECT musicas.nome AS 'Nome da música', musicas.duracao AS 'Tempo de duração', artistas.nome AS 'Nome do artista'
+        FROM musicas
+        JOIN musicas_has_artistas ON musicas.id = musicas_has_artistas.musicas_id
+        JOIN artistas ON musicas_has_artistas.artistas_id = artistas.id
+        WHERE musicas.id = %s
+        """
         my_cursor.execute(sql, (musica_id,))
         resultado = my_cursor.fetchone()
 
         if resultado:
-            nome, duracao = resultado
-            musica = {'Nome da música': nome, 'Tempo de duração': str(duracao)}
+            nome_musica, duracao, nome_artista = resultado
+            musica = {'Nome da música': nome_musica, 'Tempo de duração': str(duracao), 'Nome do artista': nome_artista}
             return jsonify(musica)
         else:
             return jsonify({'mensagem': 'Música não encontrada'}), 404
@@ -204,7 +215,7 @@ def altera_genero(): #Concluído
     )
 
 @app.route('/generos', methods = ['DELETE']) # deleta um genero musical.
-def exclui_genero():
+def exclui_genero(): #Concluído
     gen = request.json
 
     my_cursor = mydb.cursor()
@@ -223,7 +234,7 @@ def exclui_genero():
 #------------------------------------------------------------------------------------------------------
 
 @app.route('/artistas', methods = ['GET']) #puxa todos os artistas do banco
-def get_artistas():
+def get_artistas(): #Concluído
 
     my_cursor = mydb.cursor()
     my_cursor.execute('SELECT * FROM artistas')
@@ -246,6 +257,22 @@ def get_artistas():
         )
     )
 
+@app.route('/artistas/<int:artista_id>', methods = ['GET'])
+def artista_por_id(artista_id): #Concluído
+    try: 
+        my_cursor = mydb.cursor()
+        sql = "SELECT descricao FROM artistas WHERE id = %s"
+        my_cursor.execute(sql, (_id,))
+        resultado = my_cursor.fetchone()
+
+        if resultado:
+            descricao = resultado
+            genero = {'Descrição do gênero': descricao}
+            return jsonify(genero)
+        else:
+            return jsonify({'mensagem': 'Gênero não encontrado'}), 404
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
 
 @app.route('/artistas', methods = ['POST']) #adiciona um novo artista
 def novo_artista():
