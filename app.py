@@ -265,24 +265,40 @@ def get_artistas(): #Concluído
 def artista_por_id(artista_id): #Concluído
     try:
         my_cursor = mydb.cursor()
+
+        # Consulta SQL para buscar as informações do artista e suas músicas
         sql = """
-        SELECT artistas.nome AS 'Nome do artista', gravadoras.nome AS 'Nome da gravadora'
+        SELECT artistas.nome AS 'Nome do artista',
+               IFNULL(gravadoras.nome, 'Gravadora não existe') AS 'Nome da gravadora',
+               musicas.nome AS 'Nome da música'
         FROM artistas
-        JOIN gravadoras ON artistas.gravadoras_id = gravadoras.id
+        LEFT JOIN gravadoras ON artistas.gravadoras_id = gravadoras.id
+        LEFT JOIN musicas_has_artistas ON artistas.id = musicas_has_artistas.artistas_id
+        LEFT JOIN musicas ON musicas_has_artistas.musicas_id = musicas.id
         WHERE artistas.id = %s
         """
         my_cursor.execute(sql, (artista_id,))
-        resultado = my_cursor.fetchone()
+        resultado = my_cursor.fetchall()
 
         if resultado:
-            nome_artista, nome_gravadora = resultado
+            nome_artista, nome_gravadora, musicas = resultado[0][0], resultado[0][1], []
+            for row in resultado:
+                if row[2]:
+                    musicas.append(row[2])
+
             artista = {'Nome do artista': nome_artista, 'Nome da gravadora': nome_gravadora}
+
+            if musicas:
+                artista['Músicas'] = musicas
+            else:
+                artista['Mensagem'] = 'O artista não possui músicas'
+
             return jsonify(artista)
         else:
             return jsonify({'mensagem': 'Artista não encontrado'}), 404
     except mysql.connector.Error as error:
         return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
-
+    
 @app.route('/artistas', methods = ['POST']) #adiciona um novo artista
 def novo_artista(): #Concluído
     artist = request.json
@@ -465,34 +481,62 @@ def exclui_gravadora(): #Concluído
 #----------------------------------------------------------------------------------------------------------------
 
 @app.route('/clientes', methods = ['GET']) #mostra todos os clientes
-def get_clientes():
+def get_clientes(): #Concluído
 
-    my_cursor = mydb.cursor()
-    my_cursor.execute('SELECT * FROM clientes')
-    clientes = my_cursor.fetchall()
+    try:
+        my_cursor = mydb.cursor()
+        sql = """
+        SELECT id, login, senha, IFNULL(planos_id, 'sem plano') AS planos_id, email
+        FROM clientes
+        """
+        my_cursor.execute(sql)
+        clientes = my_cursor.fetchall()
 
-    clients = list()
-    for cli in clientes:
-        clients.append(
-            {
-                'id' : cli[0],
-                'login' : cli[1],
-                'senha' : cli[2],
-                'planos_id': cli[5],
-                'email': cli[6]
+        clients = []
+        for cli in clientes:
+            clients.append({
+                'id': cli[0],
+                'login': cli[1],
+                'senha': cli[2],
+                'planos_id': cli[3],
+                'email': cli[4]
+            })
+
+        return make_response(jsonify({
+            'mensagem': 'Lista de clientes',
+            'dados': clients
+        }))
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
+
+@app.route('/clientes/<int:cliente_id>', methods=['GET'])
+def get_cliente_por_id(cliente_id): #Concluído
+    try:
+        my_cursor = mydb.cursor()
+        sql = """
+        SELECT id, login, senha, IFNULL(planos_id, 'sem plano') AS planos_id, email
+        FROM clientes
+        WHERE id = %s
+        """
+        my_cursor.execute(sql, (cliente_id,))
+        resultado = my_cursor.fetchone()
+
+        if resultado:
+            cliente = {
+                'id': resultado[0],
+                'login': resultado[1],
+                'senha': resultado[2],
+                'planos_id': resultado[3],
+                'email': resultado[4]
             }
-        )
-
-    return make_response(
-        jsonify(
-        mensagem = 'Lista de clientes',
-        dados = clients
-        )
-    )
-
+            return jsonify(cliente)
+        else:
+            return jsonify({'mensagem': 'Cliente não encontrado'}), 404
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
 
 @app.route('/clientes', methods = ['POST']) #adiciona um novo cliente
-def novo_cliente():
+def novo_cliente(): #Concluído
     client = request.json
 
     my_cursor = mydb.cursor()
@@ -509,26 +553,28 @@ def novo_cliente():
     )
 
 
-@app.route('/clientes', methods = ['PUT'])  # Altera o nome do cliente
-def altera_cliente():
+@app.route('/clientes', methods = ['PUT'])  # Altera o login e senha do cliente
+def altera_cliente(): #Concluído
     client = request.json
 
     my_cursor = mydb.cursor()
 
-    sql = f"UPDATE `clientes` SET `login` = '{client['login']}' WHERE `id` = '{client['id']}'"
-    my_cursor.execute(sql)
+    sql = f"UPDATE `clientes` SET `login` = %s, `senha` = %s WHERE `id` = %s"
+    values = (client['login'], client['senha'], client['id'])
+    my_cursor.execute(sql, values)
     mydb.commit()
 
-    return make_response(
-        jsonify(
-        mensagem = 'Cliente alterado com sucesso!',
-        dados = client
-        )
-    )
+    if my_cursor.rowcount > 0:
+        return make_response(jsonify({
+            'mensagem': 'Cliente alterado com sucesso!',
+            'dados': client
+        }))
+    else:
+        return jsonify({'mensagem': 'Não foi possível alterar o cliente. Verifique se o cliente existe.'}), 404
 
 
 @app.route('/clientes', methods = ['DELETE']) # deleta um cliente
-def exclui_cliente():
+def exclui_cliente(): #Concluído
     client = request.json
 
     my_cursor = mydb.cursor()
@@ -547,7 +593,7 @@ def exclui_cliente():
 #------------------------------------------------------------------------------------------------
 
 @app.route('/planos', methods = ['GET']) #mostra todos os planos
-def get_planos():
+def get_planos(): #Testar se mostra apenas os que não são nulos
 
     my_cursor = mydb.cursor()
     my_cursor.execute('SELECT * FROM planos')
@@ -571,8 +617,31 @@ def get_planos():
         )
     )
 
+@app.route('/planos/<int:plano_id>', methods=['GET'])
+def get_plano_por_id(plano_id): #Concluído
+    try:
+        my_cursor = mydb.cursor()
+        sql = """
+        SELECT * FROM planos WHERE id = %s
+        """
+        my_cursor.execute(sql, (plano_id,))
+        resultado = my_cursor.fetchone()
+
+        if resultado:
+            plano = {
+                'id': resultado[0],
+                'descricao': resultado[1],
+                'valor': resultado[2],
+                'limite': resultado[3]
+            }
+            return jsonify(plano)
+        else:
+            return jsonify({'mensagem': 'Plano não encontrado'}), 404
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
+    
 @app.route('/planos', methods = ['POST']) #adiciona um novo plano
-def novo_plano():
+def novo_plano(): #Concluído
     plan = request.json
 
     my_cursor = mydb.cursor()
@@ -589,56 +658,52 @@ def novo_plano():
     )
 
 
-@app.route('/planos', methods = ['PUT'])  # Altera o nome do plano
-def altera_plano():
+@app.route('/planos', methods = ['PUT'])  # Altera o nome do plano e/ou o valor
+def altera_plano(): #Concluído
     plan = request.json
 
     my_cursor = mydb.cursor()
 
-    sql = f"UPDATE `planos` SET `descricao` = '{plan['descricao']}' WHERE `id` = '{plan['id']}'"
-    my_cursor.execute(sql)
+    sql = "UPDATE `planos` SET `descricao` = %s, `valor` = %s WHERE `id` = %s"
+    values = (plan['descricao'], plan['valor'], plan['id'])
+    my_cursor.execute(sql, values)
     mydb.commit()
 
-    return make_response(
-        jsonify(
-        mensagem = 'Plano alterado com sucesso!',
-        dados = plan
-        )
-    )
+    if my_cursor.rowcount > 0:
+        return make_response(jsonify({
+            'mensagem': 'Plano alterado com sucesso!',
+            'dados': plan
+        }))
+    else:
+        return jsonify({'mensagem': 'Não foi possível alterar o plano. Verifique se o plano existe.'}), 404
 
-@app.route('/planos', methods = ['DELETE']) # deleta um plano
+@app.route('/planos', methods = ['DELETE']) # deleta um plano baseado no id
+@app.route('/planos', methods=['DELETE']) #Concluído
 def exclui_plano():
     plan = request.json
 
     my_cursor = mydb.cursor()
 
-    sql = f"DELETE from `planos` WHERE `id` = '{plan['id']}'"
-    my_cursor.execute(sql)
+    # Atualiza planos_id como NULL na tabela clientes para os clientes que possuem o plano sendo excluído
+    update_sql = "UPDATE `clientes` SET `planos_id` = NULL WHERE `planos_id` = %s"
+    my_cursor.execute(update_sql, (plan['id'],))
     mydb.commit()
 
-    return make_response(
-        jsonify(
-        mensagem = 'Plano excluído com sucesso!',
-        dados = plan
-        )
-    )
+    # Exclui o plano da tabela planos
+    delete_sql = "DELETE FROM `planos` WHERE `id` = %s"
+    my_cursor.execute(delete_sql, (plan['id'],))
+    mydb.commit()
+
+    if my_cursor.rowcount > 0:
+        return make_response(jsonify({
+            'mensagem': 'Plano excluído com sucesso!',
+            'dados': plan
+        }))
+    else:
+        return jsonify({'mensagem': 'Não foi possível excluir o plano. Verifique se o plano existe.'}), 404
 
 if __name__ == '__main__':
     
     app.run(host="localhost", port="5000", debug=True)
 
-    # def nova_musica():
-#     song = request.json
-
-#     my_cursor = mydb.cursor()
-
-#     sql = f"INSERT INTO `musicas` (`nome`, `duracao`, `generos_id`) VALUES ('{song['nome']}', '{song['duracao']}', '{song['generos_id']}')"
-#     my_cursor.execute(sql)
-#     mydb.commit()
-
-#     return make_response(
-#         jsonify(
-#         mensagem = 'Música cadastrada com sucesso!',
-#         dados = song
-#         )
-#     )
+   
