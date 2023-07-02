@@ -119,7 +119,7 @@ def altera_musica(): #Concluído?
     )
 
 @app.route('/musicas', methods = ['DELETE']) # deleta uma música baseado no id que é passado. existe outra parametro que se pode pedir para excluir?
-def exclui_musica():
+def exclui_musica(): #Testar depois
     song = request.json
 
     my_cursor = mydb.cursor()
@@ -235,47 +235,56 @@ def exclui_genero(): #Concluído
 
 @app.route('/artistas', methods = ['GET']) #puxa todos os artistas do banco
 def get_artistas(): #Concluído
+    try:
+        my_cursor = mydb.cursor()
+        sql = """
+        SELECT artistas.id, artistas.nome AS 'Nome do artista', gravadoras.nome AS 'Nome da gravadora'
+        FROM artistas
+        JOIN gravadoras ON artistas.gravadoras_id = gravadoras.id
+        """
+        my_cursor.execute(sql)
+        resultado = my_cursor.fetchall()
 
-    my_cursor = mydb.cursor()
-    my_cursor.execute('SELECT * FROM artistas')
-    artistas = my_cursor.fetchall()
-
-    artists = list()
-    for artist in artistas:
-        artists.append(
-            {
-                'id' : artist[0],
-                'nome' : artist[1],
-                'gravadora_id' : artist[2]
+        artists = []
+        for row in resultado:
+            artista = {
+                'id': row[0],
+                'nome': row[1],
+                'nome_gravadora': row[2]
             }
-        )
+            artists.append(artista)
 
-    return make_response(
-        jsonify(
-        mensagem = 'Lista de artistas',
-        dados = artists
-        )
-    )
+        return make_response(jsonify({
+            'mensagem': 'Lista de artistas',
+            'dados': artists
+        }))
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
 
 @app.route('/artistas/<int:artista_id>', methods = ['GET'])
 def artista_por_id(artista_id): #Concluído
-    try: 
+    try:
         my_cursor = mydb.cursor()
-        sql = "SELECT descricao FROM artistas WHERE id = %s"
-        my_cursor.execute(sql, (_id,))
+        sql = """
+        SELECT artistas.nome AS 'Nome do artista', gravadoras.nome AS 'Nome da gravadora'
+        FROM artistas
+        JOIN gravadoras ON artistas.gravadoras_id = gravadoras.id
+        WHERE artistas.id = %s
+        """
+        my_cursor.execute(sql, (artista_id,))
         resultado = my_cursor.fetchone()
 
         if resultado:
-            descricao = resultado
-            genero = {'Descrição do gênero': descricao}
-            return jsonify(genero)
+            nome_artista, nome_gravadora = resultado
+            artista = {'Nome do artista': nome_artista, 'Nome da gravadora': nome_gravadora}
+            return jsonify(artista)
         else:
-            return jsonify({'mensagem': 'Gênero não encontrado'}), 404
+            return jsonify({'mensagem': 'Artista não encontrado'}), 404
     except mysql.connector.Error as error:
         return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
 
 @app.route('/artistas', methods = ['POST']) #adiciona um novo artista
-def novo_artista():
+def novo_artista(): #Concluído
     artist = request.json
 
     my_cursor = mydb.cursor()
@@ -292,7 +301,7 @@ def novo_artista():
     )
 
 @app.route('/artistas', methods = ['PUT'])  # Altera o nome do artista
-def altera_artista():
+def altera_artista(): #Concluído
     artist = request.json
 
     my_cursor = mydb.cursor()
@@ -310,7 +319,7 @@ def altera_artista():
 
 
 @app.route('/artistas', methods = ['DELETE']) # deleta um artista
-def exclui_artista():
+def exclui_artista(): #Concluído
     artist = request.json
 
     my_cursor = mydb.cursor()
@@ -329,31 +338,74 @@ def exclui_artista():
 #-------------------------------------------------------------------------------------------------------------------------
 
 @app.route('/gravadoras', methods = ['GET']) #puxa todas as gravadoras
-def get_gravadoras():
+def get_gravadoras(): #Concluído
 
-    my_cursor = mydb.cursor()
-    my_cursor.execute('SELECT * FROM gravadoras')
-    gravadoras = my_cursor.fetchall()
+    try:
+        my_cursor = mydb.cursor()
+        sql = """
+        SELECT gravadoras.id, gravadoras.nome AS 'Nome da gravadora', artistas.nome AS 'Nome do artista'
+        FROM gravadoras
+        LEFT JOIN artistas ON gravadoras.id = artistas.gravadoras_id
+        """
+        my_cursor.execute(sql)
+        resultado = my_cursor.fetchall()
 
-    records = list()
-    for rec in gravadoras:
-        records.append(
-            {
-                'id' : rec[0],
-                'nome' : rec[1],
-                'valor_contrato' : str(rec[2]),
+        gravadoras = []
+        for row in resultado:
+            gravadora_id, gravadora_nome, artista_nome = row
+
+            # Verifica se a gravadora já existe na lista
+            gravadora_existente = next((gravadora for gravadora in gravadoras if gravadora['id'] == gravadora_id), None)
+            if gravadora_existente:
+                gravadora_existente['artistas'].append(artista_nome)
+            else:
+                gravadora = {
+                    'id': gravadora_id,
+                    'nome': gravadora_nome,
+                    'artistas': [artista_nome] if artista_nome else []
+                }
+                gravadoras.append(gravadora)
+
+        return make_response(jsonify({
+            'mensagem': 'Lista de gravadoras',
+            'dados': gravadoras
+        }))
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
+
+@app.route('/gravadoras/<int:gravadora_id>', methods = ['GET'])
+def gravadora_por_id(gravadora_id): #Concluído
+    try:
+        my_cursor = mydb.cursor()
+        
+        # Consulta para obter a gravadora
+        gravadora_sql = "SELECT nome, valor_contrato FROM gravadoras WHERE id = %s"
+        my_cursor.execute(gravadora_sql, (gravadora_id,))
+        gravadora = my_cursor.fetchone()
+
+        if gravadora:
+            nome, valor_contrato = gravadora
+            
+            # Consulta para obter os artistas da gravadora
+            artistas_sql = "SELECT artistas.nome FROM artistas JOIN gravadoras ON artistas.gravadoras_id = gravadoras.id WHERE gravadoras.id = %s"
+            my_cursor.execute(artistas_sql, (gravadora_id,))
+            artistas = [row[0] for row in my_cursor.fetchall()]
+            
+            # Criar o objeto de resposta
+            resposta = {
+                'Nome da gravadora': nome,
+                'Valor do contrato': str(valor_contrato),
+                'Artistas': artistas
             }
-        )
-
-    return make_response(
-        jsonify(
-        mensagem = 'Lista de gravadoras',
-        dados = records
-        )
-    )
-
+            
+            return jsonify(resposta)
+        else:
+            return jsonify({'mensagem': 'Gravadora não encontrada'}), 404
+    except mysql.connector.Error as error:
+        return jsonify({'mensagem': f'Erro no banco de dados: {error}'}), 500
+    
 @app.route('/gravadoras', methods = ['POST']) #adiciona uma nova gravadora
-def nova_gravadora():
+def nova_gravadora(): #Concluído
     record = request.json
 
     my_cursor = mydb.cursor()
@@ -371,7 +423,7 @@ def nova_gravadora():
 
 
 @app.route('/gravadoras', methods = ['PUT'])  # Altera o nome da gravadora
-def altera_gravadora():
+def altera_gravadora(): #Concluído
     record = request.json
 
     my_cursor = mydb.cursor()
