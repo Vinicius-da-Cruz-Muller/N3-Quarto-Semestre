@@ -677,7 +677,6 @@ def altera_plano(): #Concluído
     else:
         return jsonify({'mensagem': 'Não foi possível alterar o plano. Verifique se o plano existe.'}), 404
 
-@app.route('/planos', methods = ['DELETE']) # deleta um plano baseado no id
 @app.route('/planos', methods=['DELETE']) #Concluído
 def exclui_plano():
     plan = request.json
