@@ -1,9 +1,9 @@
 import mysql.connector
-from flask import Flask
+from flask import Flask, jsonify, request
 from unittest.mock import Mock
 import pytest
 
-from src.app import app, get_musicas, musica_por_id
+from src.app import app, get_musicas, musica_por_id, nova_musica, musicas_insert, musicas_artistas_insert
 
 @pytest.fixture
 def client():
@@ -98,6 +98,42 @@ def test_musica_por_id(client, mocker):
     assert data['Tempo de duração'] == '4:00:00'
     assert data['Nome do artista'] == 'Mano Lima'
 
+
+# Define um mock para a conexão MySQL do aplicativo Flask
+@pytest.fixture(autouse=True)
+def mock_mysql_connector(mocker):
+    mocker.patch('mysql.connector.connect')
+
+# Teste para a rota '/musicas'
+def test_nova_musica(client, mocker):
+    # Define os dados do JSON de requisição
+    json_data = {
+        'nome': 'Música 1',
+        'duracao': 180,
+        'generos_id': 1,
+        'lancamento': None,
+        'artistas': [1, 2]
+    }
+
+    # Cria um mock para a função 'musicas_insert' e substitui a implementação
+    mock_musicas_insert = Mock(return_value=(1, None))
+    mocker.patch('src.app.musicas_insert', mock_musicas_insert)
+
+    # Cria um mock para a função 'musicas_artistas_insert' e substitui a implementação
+    mock_musicas_artistas_insert = Mock(return_value=None)
+    mocker.patch('src.app.musicas_artistas_insert', mock_musicas_artistas_insert)
+
+    # Faz uma requisição POST para a rota '/musicas'
+    response = client.post('/musicas', json=json_data)
+
+    # Verifica se a resposta está correta
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['mensagem'] == 'Música criada com sucesso'
+
+    # Verifica se as funções 'musicas_insert' e 'musicas_artistas_insert' foram chamadas corretamente
+    mock_musicas_insert.assert_called_once_with('Música 1', 180, 1, None)
+    mock_musicas_artistas_insert.assert_called_once_with(1, [1, 2])
 
 # Executa os testes
 if __name__ == '__main__':
