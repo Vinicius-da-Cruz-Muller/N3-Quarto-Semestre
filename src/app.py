@@ -679,6 +679,7 @@ def altera_plano(): #Concluído
 
 @app.route('/planos', methods=['DELETE']) #Concluído
 def exclui_plano():
+
     plan = request.json
 
     my_cursor = mydb.cursor()
@@ -700,6 +701,7 @@ def exclui_plano():
         }))
     else:
         return jsonify({'mensagem': 'Não foi possível excluir o plano. Verifique se o plano existe.'}), 404
+
 
 if __name__ == '__main__':
     

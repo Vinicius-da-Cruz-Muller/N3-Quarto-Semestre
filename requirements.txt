@@ -1,0 +1,6 @@
+flask
+mysql-connector-python
+pytest
+requests
+pytest-cov
+pytest-mock
