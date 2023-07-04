@@ -5,7 +5,7 @@ mydb = mysql.connector.connect(
     host = 'localhost',
     user = 'root',
     password = 'Semestre202301',
-    database = 'bancoteste1', #n3tripla
+    database = 'bancoteste2', #n3tripla ou bancoteste1
 )
 
 app = Flask(__name__)
