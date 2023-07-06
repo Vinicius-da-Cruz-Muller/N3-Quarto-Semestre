@@ -5,7 +5,7 @@ mydb = mysql.connector.connect(
     host = 'localhost',
     user = 'root',
     password = 'Semestre202301',
-    database = 'bancoteste2', #n3tripla ou bancoteste1
+    database = 'n3tripla', #n3tripla ou bancoteste1
 )
 
 app = Flask(__name__)
@@ -266,7 +266,6 @@ def artista_por_id(artista_id): #Concluído
     try:
         my_cursor = mydb.cursor()
 
-        # Consulta SQL para buscar as informações do artista e suas músicas
         sql = """
         SELECT artistas.nome AS 'Nome do artista',
                IFNULL(gravadoras.nome, 'Gravadora não existe') AS 'Nome da gravadora',
@@ -370,7 +369,6 @@ def get_gravadoras(): #Concluído
         for row in resultado:
             gravadora_id, gravadora_nome, artista_nome = row
 
-            # Verifica se a gravadora já existe na lista
             gravadora_existente = next((gravadora for gravadora in gravadoras if gravadora['id'] == gravadora_id), None)
             if gravadora_existente:
                 gravadora_existente['artistas'].append(artista_nome)
@@ -394,7 +392,6 @@ def gravadora_por_id(gravadora_id): #Concluído
     try:
         my_cursor = mydb.cursor()
         
-        # Consulta para obter a gravadora
         gravadora_sql = "SELECT nome, valor_contrato FROM gravadoras WHERE id = %s"
         my_cursor.execute(gravadora_sql, (gravadora_id,))
         gravadora = my_cursor.fetchone()
@@ -402,12 +399,10 @@ def gravadora_por_id(gravadora_id): #Concluído
         if gravadora:
             nome, valor_contrato = gravadora
             
-            # Consulta para obter os artistas da gravadora
             artistas_sql = "SELECT artistas.nome FROM artistas JOIN gravadoras ON artistas.gravadoras_id = gravadoras.id WHERE gravadoras.id = %s"
             my_cursor.execute(artistas_sql, (gravadora_id,))
             artistas = [row[0] for row in my_cursor.fetchall()]
             
-            # Criar o objeto de resposta
             resposta = {
                 'Nome da gravadora': nome,
                 'Valor do contrato': str(valor_contrato),
@@ -461,12 +456,10 @@ def exclui_gravadora(): #Concluído
 
     my_cursor = mydb.cursor()
 
-    # Primeiro, atualize a tabela artistas
     update_sql = f"UPDATE artistas SET gravadoras_id = NULL WHERE gravadoras_id = '{record['id']}'"
     my_cursor.execute(update_sql)
     mydb.commit()
 
-    # Em seguida, delete a gravadora da tabela gravadoras
     delete_sql = f"DELETE FROM gravadoras WHERE id = '{record['id']}'"
     my_cursor.execute(delete_sql)
     mydb.commit()
@@ -684,12 +677,10 @@ def exclui_plano():
 
     my_cursor = mydb.cursor()
 
-    # Atualiza planos_id como NULL na tabela clientes para os clientes que possuem o plano sendo excluído
     update_sql = "UPDATE `clientes` SET `planos_id` = NULL WHERE `planos_id` = %s"
     my_cursor.execute(update_sql, (plan['id'],))
     mydb.commit()
 
-    # Exclui o plano da tabela planos
     delete_sql = "DELETE FROM `planos` WHERE `id` = %s"
     my_cursor.execute(delete_sql, (plan['id'],))
     mydb.commit()
